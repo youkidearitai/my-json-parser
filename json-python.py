@@ -21,7 +21,7 @@ class MyJson():
         self.whitespace()
         if self.is_emptyobject():
           break
-        key = self.string()
+        key = self.value_string()
         self.whitespace()
         self.colon()
         self.whitespace()
@@ -43,7 +43,7 @@ class MyJson():
       else:
         break
 
-  def string(self):
+  def value_string(self):
     ret = ""
 
     if self.word != '"':
@@ -107,7 +107,7 @@ class MyJson():
 
   def value(self):
     if self.word == '"':
-      return self.string()
+      return self.value_string()
 
     if self.word == 'f':
       return self.value_false()
