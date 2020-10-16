@@ -5,7 +5,11 @@ class MyJsonParseError(Exception):
 
 class MyJson():
 
+  json_value = dict()
+
   def parse(self, string):
+    self.json_value = dict()
+
     self.strings = iter(string)
     self.index = 0
 
@@ -14,26 +18,35 @@ class MyJson():
     if self.word != '{':
       raise MyJsonParseError(f'Invalid first word {first}')
 
-    self.word = next(self.strings)
-
+    visited = False
     try:
-      while True:
-        self.whitespace()
-        if self.is_emptyobject():
-          break
-        key = self.value_string()
-        self.whitespace()
-        self.colon()
-        self.whitespace()
-        value = self.value()
-        self.whitespace()
-        print(f'--- object key: "{key}" ---')
-        print(f'--- object type: {type(value)} value: {value} ---')
-        if not self.is_nextobject():
-          break
-    except StopIteration:
+      self.json_value = self.value_object()
+    except StopIteration as e:
+      visited = True
       if self.word != '}':
         raise MyJsonParseError(f'Invalid end word {word}')
+
+    return self.json_value
+
+  def value_object(self):
+    self.word = next(self.strings)
+    json_value = dict()
+
+    while True:
+      self.whitespace()
+      if self.is_emptyobject():
+        break
+      key = self.value_string()
+      self.whitespace()
+      self.colon()
+      self.whitespace()
+      value = self.value()
+      self.whitespace()
+      json_value[key] = value
+      if not self.is_nextobject():
+        break
+
+    return json_value
 
   def whitespace(self):
     while True:
@@ -199,6 +212,10 @@ class MyJson():
     if self.word in ['-'] + [chr(48 + i) for i in range(10)]:
       return self.value_number()
 
+    if self.word == '{':
+      value = self.value_object()
+      return value
+
     if self.word == 'f':
       return self.value_false()
 
@@ -207,6 +224,8 @@ class MyJson():
 
     if self.word == 'n':
       return self.value_null()
+
+    raise MyJsonParseError(f"Value error: {self.word}")
 
   def is_emptyobject(self):
     if self.word == '}':
@@ -218,88 +237,111 @@ class MyJson():
     if self.word == ',':
       self.word = next(self.strings)
       return True
+
+    try:
+      self.word = next(self.strings)
+    except StopIteration as e:
+      pass
+
     return False
 
 
 if __name__ == '__main__':
   myjson = MyJson()
-  myjson.parse("{    }")
+  assert(myjson.parse("{    }") == {})
   assert(myjson.index == 4)
-  myjson.parse("{}")
+  assert(myjson.parse("{}") == {})
   assert(myjson.index == 0)
-  myjson.parse("{\n}")
+  assert(myjson.parse("{\n}") == {})
   assert(myjson.index == 1)
-  myjson.parse("{\r\n}")
+  assert(myjson.parse("{\r\n}") == {})
   assert(myjson.index == 2)
-  myjson.parse("{\t}")
+  assert(myjson.parse("{\t}") == {})
   assert(myjson.index == 1)
 
   try:
     myjson.parse('{""}')
     assert(myjson.index == 0)
   except MyJsonParseError as e:
-    print(e)
+    assert("Colon parser error: }" == str(e))
 
   try:
     myjson.parse('{" "}')
     assert(myjson.index == 1)
   except MyJsonParseError as e:
-    print(e)
+    assert("Colon parser error: }" == str(e))
 
   try:
     myjson.parse('{" \n"}')
     assert(myjson.index == 2)
   except MyJsonParseError as e:
-    print(e)
+    assert("Colon parser error: }" == str(e))
 
   try:
     myjson.parse('{"  "}')
     assert(myjson.index == 2)
   except MyJsonParseError as e:
-    print(e)
+    assert("Colon parser error: }" == str(e))
 
   try:
     myjson.parse('{"  " }')
     assert(myjson.index == 3)
   except MyJsonParseError as e:
-    print(e)
-  """
-  """
+    assert("Colon parser error: }" == str(e))
 
-  myjson.parse('{"  ":" "}')
+  assert(myjson.parse('{"  ":" "}') == {"  ": " "})
   assert(myjson.index == 3)
-  myjson.parse('{"ab": "b" , "c": "d"}')
-  myjson.parse('{"ab":"b","c":"d"}')
+  assert(myjson.parse('{"ab": "b" , "c": "d"}') == {"ab": "b", "c": "d"})
+  assert(myjson.parse('{"ab":"b","c":"d"}') == {"ab": "b", "c": "d"})
   assert(myjson.index == 5)
 
-  myjson.parse('{"ab": false}')
+  assert(myjson.parse('{"ab": false}') == {"ab": False})
   assert(myjson.index == 8)
 
-  myjson.parse('{"ab": false, "cd": true}')
+  assert(myjson.parse('{"ab": false, "cd": true}') == {"ab": False, "cd": True})
   assert(myjson.index == 16)
 
-  myjson.parse('{"ab": false, "cd": true, "ef": null}')
+  assert(myjson.parse('{"ab": false, "cd": true, "ef": null}') == {"ab": False, "cd": True, "ef": None})
   assert(myjson.index == 24)
 
-  myjson.parse('{"a": "\\""}')
+  assert(myjson.parse('{"a": "\\""}') == {"a": "\""})
   assert(myjson.index == 4)
 
-  myjson.parse('{"a": "\\"def\\""}')
+  assert(myjson.parse('{"a": "\\"def\\""}') == {"a": "\"def\""})
   assert(myjson.index == 9)
 
   string = '{"quot": "\\"", "backslash": "\\\\", "solidius": "\\/", "backspace": "\\b", "formfeed": "\\f", "linefeed": "\\n", "carriage return": "\\r", "horizontal tab": "\\t"}'
-  print(string)
-  myjson.parse(string)
+  assert(myjson.parse(string) == {"quot": '"', "backslash": '\\', "solidius": '/', "backspace": '\b', "formfeed": '\f', "linefeed": '\n', "carriage return": '\r', "horizontal tab": '\t'})
 
   string = '{"unicode": "\\u9000", "japanese hiragana small a": "\\u3041"}'
-  print(string)
-  myjson.parse(string)
+  assert(myjson.parse(string) == {"unicode": "\u9000", "japanese hiragana small a": "\u3041"})
 
   string = '{"number": 123, "minus number": -123, "zero": 0, "minus zero": -0}'
-  print(string)
-  myjson.parse(string)
+  assert(myjson.parse(string) == {"number": 123, "minus number": -123, "zero": 0, "minus zero": 0})
 
   string = '{"fraction": 123.5, "minus fraction": -123.5, "zero": 0.0, "minus zero": -0.0, "exponent": -123.4e+5}'
-  print(string)
-  myjson.parse(string)
+  assert(myjson.parse(string) == {"fraction": 123.5, "minus fraction": -123.5, "zero": 0.0, "minus zero": -0.0, "exponent": -123.4e+5})
 
+  string = '{"object": {}}'
+  assert(myjson.parse(string) == {'object': {}})
+
+  string = '{"object": {}, "abc": {}}'
+  assert(myjson.parse(string) == {'object': {}, 'abc': {}})
+
+  string = '{"object": {}, "abc": {}, "def": {}}'
+  assert(myjson.parse(string) == {'object': {}, 'abc': {}, 'def': {}})
+  string = '{"object": {"obj": {}}}'
+  parsed = myjson.parse(string)
+  assert(parsed == {'object': {'obj': {}}})
+
+  string = '{"object": {"obj": {}}, "abc": {}}'
+  parsed = myjson.parse(string)
+  assert(parsed == {'object': {'obj': {}}, 'abc': {}})
+
+  string = '{"object": {"obj": {}}, "abc": 2}'
+  parsed = myjson.parse(string)
+  assert(parsed == {'object': {'obj': {}}, 'abc': 2})
+
+  string = '{"object": {"obj": {"aaa": 3}}, "abc": 2}'
+  parsed = myjson.parse(string)
+  assert(parsed == {'object': {'obj': {"aaa": 3}}, 'abc': 2})
