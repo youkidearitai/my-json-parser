@@ -22,13 +22,13 @@ class MyJson():
         if self.is_emptyobject():
           break
         key = self.string()
-        print(f'--- object key: "{key}" ---')
         self.whitespace()
         self.colon()
         self.whitespace()
         value = self.value()
-        print(f'--- object value: "{value}" ---')
         self.whitespace()
+        print(f'--- object key: "{key}" ---')
+        print(f'--- object type: {type(value)} value: {value} ---')
         if not self.is_nextobject():
           break
     except StopIteration:
