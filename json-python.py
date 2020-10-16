@@ -48,6 +48,22 @@ class MyJson():
 
     return json_value
 
+  def value_array(self):
+    self.word = next(self.strings)
+    json_value = []
+
+    while True:
+      self.whitespace()
+      if self.is_emptyarray():
+        break
+      value = self.value()
+      self.whitespace()
+      json_value.append(value)
+      if not self.is_nextarray():
+        break
+
+    return json_value
+
   def whitespace(self):
     while True:
       if (self.word in [" ", "\n", "\r", "\t"]):
@@ -216,6 +232,10 @@ class MyJson():
       value = self.value_object()
       return value
 
+    if self.word == '[':
+      value = self.value_array()
+      return value
+
     if self.word == 'f':
       return self.value_false()
 
@@ -226,6 +246,24 @@ class MyJson():
       return self.value_null()
 
     raise MyJsonParseError(f"Value error: {self.word}")
+
+  def is_emptyarray(self):
+    if self.word == ']':
+      self.word = next(self.strings)
+      return True
+    return False
+
+  def is_nextarray(self):
+    if self.word == ',':
+      self.word = next(self.strings)
+      return True
+
+    try:
+      self.word = next(self.strings)
+    except StopIteration as e:
+      pass
+
+    return False
 
   def is_emptyobject(self):
     if self.word == '}':
@@ -345,3 +383,11 @@ if __name__ == '__main__':
   string = '{"object": {"obj": {"aaa": 3}}, "abc": 2}'
   parsed = myjson.parse(string)
   assert(parsed == {'object': {'obj': {"aaa": 3}}, 'abc': 2})
+
+  string = '{"array": [1,2,3,4,5]}'
+  parsed = myjson.parse(string)
+  assert(parsed == {"array": [1, 2, 3, 4, 5]})
+
+  string = '{"object": {"array": [1,2,3,4,5]}, "array": [{"1": "aaa", "2": "bbb"}]}'
+  parsed = myjson.parse(string)
+  assert(parsed == {"object": {"array": [1, 2, 3, 4, 5]}, "array": [{"1": "aaa", "2": "bbb"}]})
