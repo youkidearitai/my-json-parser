@@ -15,16 +15,13 @@ class MyJson():
 
     self.word = next(self.strings)
 
-    if self.word != '{':
-      raise MyJsonParseError(f'Invalid first word {first}')
-
     visited = False
     try:
-      self.json_value = self.value_object()
+      self.whitespace()
+      self.json_value = self.value()
+      self.whitespace()
     except StopIteration as e:
       visited = True
-      if self.word != '}':
-        raise MyJsonParseError(f'Invalid end word {word}')
 
     return self.json_value
 
