@@ -138,9 +138,66 @@ class MyJson():
 
     return None
 
+  def value_number(self):
+    def digit():
+      number = ""
+
+      if self.word == '-':
+        number += '-'
+        self.word = next(self.strings)
+        self.index += 1
+
+      while True:
+        if self.word in [chr(48 + i) for i in range(10)]:
+          number += self.word
+          self.word = next(self.strings)
+          self.index += 1
+        else:
+          break
+
+      return number
+
+    def fraction():
+      nonlocal is_integer
+
+      value = digit()
+      if self.word == '.':
+        value += '.'
+        self.word = next(self.strings)
+        self.index += 1
+        value += digit() # decimal
+        is_integer = False
+      return value
+
+    def exponent():
+      nonlocal is_integer
+
+      value = fraction()
+      if self.word in ['e', 'E']:
+        value += 'e'
+        self.word = next(self.strings)
+        self.index += 1
+        if self.word in ['-', '+']:
+          value += self.word
+          self.word = next(self.strings)
+          self.index += 1
+        value += digit()
+        is_integer = False
+      return value
+
+    is_integer = True
+    number = exponent()
+    if is_integer:
+      return int(number, 10)
+    else:
+      return float(number)
+
   def value(self):
     if self.word == '"':
       return self.value_string()
+
+    if self.word in ['-'] + [chr(48 + i) for i in range(10)]:
+      return self.value_number()
 
     if self.word == 'f':
       return self.value_false()
@@ -235,6 +292,14 @@ if __name__ == '__main__':
   myjson.parse(string)
 
   string = '{"unicode": "\\u9000", "japanese hiragana small a": "\\u3041"}'
+  print(string)
+  myjson.parse(string)
+
+  string = '{"number": 123, "minus number": -123, "zero": 0, "minus zero": -0}'
+  print(string)
+  myjson.parse(string)
+
+  string = '{"fraction": 123.5, "minus fraction": -123.5, "zero": 0.0, "minus zero": -0.0, "exponent": -123.4e+5}'
   print(string)
   myjson.parse(string)
 
