@@ -66,8 +66,57 @@ class MyJson():
 
     self.word = next(self.strings)
 
+  def value_false(self):
+    token = ""
+
+    for index in range(5):
+      token += self.word
+      self.word = next(self.strings)
+      self.index += 1
+
+    if token != 'false':
+      raise MyJsonParseError(f'False parse error: {token}')
+
+    return False
+
+  def value_true(self):
+    token = ""
+
+    for index in range(4):
+      token += self.word
+      self.word = next(self.strings)
+      self.index += 1
+
+    if token != 'true':
+      raise MyJsonParseError(f'True parse error: {token}')
+
+    return True
+
+  def value_null(self):
+    token = ""
+
+    for index in range(4):
+      token += self.word
+      self.word = next(self.strings)
+      self.index += 1
+
+    if token != 'null':
+      raise MyJsonParseError(f'Null parse error: {token}')
+
+    return None
+
   def value(self):
-    return self.string()
+    if self.word == '"':
+      return self.string()
+
+    if self.word == 'f':
+      return self.value_false()
+
+    if self.word == 't':
+      return self.value_true()
+
+    if self.word == 'n':
+      return self.value_null()
 
   def is_emptyobject(self):
     if self.word == '}':
@@ -132,3 +181,12 @@ if __name__ == '__main__':
   myjson.parse('{"ab": "b" , "c": "d"}')
   myjson.parse('{"ab":"b","c":"d"}')
   assert(myjson.index == 5)
+
+  myjson.parse('{"ab": false}')
+  assert(myjson.index == 8)
+
+  myjson.parse('{"ab": false, "cd": true}')
+  assert(myjson.index == 16)
+
+  myjson.parse('{"ab": false, "cd": true, "ef": null}')
+  assert(myjson.index == 24)
