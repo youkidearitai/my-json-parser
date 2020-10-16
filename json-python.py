@@ -52,9 +52,42 @@ class MyJson():
     self.word = next(self.strings)
 
     while self.word != '"':
-      ret += self.word
-      self.word = next(self.strings)
-      self.index += 1
+      if self.word == '\\':
+        self.word = next(self.strings)
+        self.index += 1
+
+        if self.word == '"':
+          self.word = '"'
+        elif self.word == '\\':
+          self.word = '\\'
+        elif self.word == '/':
+          self.word = '/'
+        elif self.word == 'b':
+          self.word = '\b'
+        elif self.word == 'f':
+          self.word = '\f'
+        elif self.word == 'n':
+          self.word = '\n'
+        elif self.word == 'r':
+          self.word = '\r'
+        elif self.word == 't':
+          self.word = '\t'
+        elif self.word == 'u':
+          codepoint = ""
+          valids = [chr(48 + i) for i in range(10)] + [chr(97 + i) for i in range(6)] + [chr(65 + i) for i in range(6)]
+          for index in range(4):
+            digits = next(self.strings)
+            if digits in valids:
+              codepoint += digits
+          self.word = chr(int(codepoint, 16))
+
+        ret += self.word
+        self.word = next(self.strings)
+        self.index += 1
+      else:
+        ret += self.word
+        self.word = next(self.strings)
+        self.index += 1
 
     self.word = next(self.strings)
 
@@ -190,3 +223,18 @@ if __name__ == '__main__':
 
   myjson.parse('{"ab": false, "cd": true, "ef": null}')
   assert(myjson.index == 24)
+
+  myjson.parse('{"a": "\\""}')
+  assert(myjson.index == 4)
+
+  myjson.parse('{"a": "\\"def\\""}')
+  assert(myjson.index == 9)
+
+  string = '{"quot": "\\"", "backslash": "\\\\", "solidius": "\\/", "backspace": "\\b", "formfeed": "\\f", "linefeed": "\\n", "carriage return": "\\r", "horizontal tab": "\\t"}'
+  print(string)
+  myjson.parse(string)
+
+  string = '{"unicode": "\\u9000", "japanese hiragana small a": "\\u3041"}'
+  print(string)
+  myjson.parse(string)
+
