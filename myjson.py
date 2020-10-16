@@ -5,25 +5,17 @@ class MyJsonParseError(Exception):
 
 class MyJson():
 
-  json_value = dict()
-
   def parse(self, string):
-    self.json_value = dict()
-
     self.strings = iter(string)
     self.index = 0
 
     self.word = next(self.strings)
+    json_value = None
 
     visited = False
-    try:
-      self.whitespace()
-      self.json_value = self.value()
-      self.whitespace()
-    except StopIteration as e:
-      visited = True
+    json_value = self.value()
 
-    return self.json_value
+    return json_value
 
   def value_object(self):
     self.word = next(self.strings)
@@ -64,7 +56,10 @@ class MyJson():
   def whitespace(self):
     while True:
       if (self.word in [" ", "\n", "\r", "\t"]):
-        self.word = next(self.strings)
+        try:
+          self.word = next(self.strings)
+        except StopIteration as e:
+          break
         self.index += 1
       else:
         break
@@ -115,7 +110,10 @@ class MyJson():
         self.word = next(self.strings)
         self.index += 1
 
-    self.word = next(self.strings)
+    try:
+      self.word = next(self.strings)
+    except StopIteration as e:
+      pass
 
     return ret
 
@@ -130,7 +128,10 @@ class MyJson():
 
     for index in range(5):
       token += self.word
-      self.word = next(self.strings)
+      try:
+        self.word = next(self.strings)
+      except StopIteration as e:
+        pass
       self.index += 1
 
     if token != 'false':
@@ -143,7 +144,10 @@ class MyJson():
 
     for index in range(4):
       token += self.word
-      self.word = next(self.strings)
+      try:
+        self.word = next(self.strings)
+      except StopIteration as e:
+        pass
       self.index += 1
 
     if token != 'true':
@@ -156,7 +160,10 @@ class MyJson():
 
     for index in range(4):
       token += self.word
-      self.word = next(self.strings)
+      try:
+        self.word = next(self.strings)
+      except StopIteration as e:
+        pass
       self.index += 1
 
     if token != 'null':
@@ -176,7 +183,10 @@ class MyJson():
       while True:
         if self.word in [chr(48 + i) for i in range(10)]:
           number += self.word
-          self.word = next(self.strings)
+          try:
+            self.word = next(self.strings)
+          except StopIteration as e:
+            break
           self.index += 1
         else:
           break
@@ -219,34 +229,51 @@ class MyJson():
       return float(number)
 
   def value(self):
+    self.whitespace()
+
     if self.word == '"':
-      return self.value_string()
+      value = self.value_string()
+      self.whitespace()
+      return value
 
     if self.word in ['-'] + [chr(48 + i) for i in range(10)]:
-      return self.value_number()
+      value = self.value_number()
+      self.whitespace()
+      return value
 
     if self.word == '{':
       value = self.value_object()
+      self.whitespace()
       return value
 
     if self.word == '[':
       value = self.value_array()
+      self.whitespace()
       return value
 
     if self.word == 'f':
-      return self.value_false()
+      value = self.value_false()
+      self.whitespace()
+      return value
 
     if self.word == 't':
-      return self.value_true()
+      value = self.value_true()
+      self.whitespace()
+      return value
 
     if self.word == 'n':
-      return self.value_null()
+      value = self.value_null()
+      self.whitespace()
+      return value
 
     raise MyJsonParseError(f"Value error: {self.word}")
 
   def is_emptyarray(self):
     if self.word == ']':
-      self.word = next(self.strings)
+      try:
+        self.word = next(self.strings)
+      except StopIteration as e:
+        pass
       return True
     return False
 
@@ -264,7 +291,10 @@ class MyJson():
 
   def is_emptyobject(self):
     if self.word == '}':
-      self.word = next(self.strings)
+      try:
+        self.word = next(self.strings)
+      except StopIteration as e:
+        pass
       return True
     return False
 
@@ -388,3 +418,42 @@ if __name__ == '__main__':
   string = '{"object": {"array": [1,2,3,4,5]}, "array": [{"1": "aaa", "2": "bbb"}]}'
   parsed = myjson.parse(string)
   assert(parsed == {"object": {"array": [1, 2, 3, 4, 5]}, "array": [{"1": "aaa", "2": "bbb"}]})
+
+  string = 'true'
+  parsed = myjson.parse(string)
+  assert(parsed == True)
+
+  string = 'false'
+  parsed = myjson.parse(string)
+  assert(parsed == False)
+
+  string = 'null'
+  parsed = myjson.parse(string)
+  assert(parsed == None)
+
+  string = '"abc"'
+  parsed = myjson.parse(string)
+  assert(parsed == "abc")
+
+  string = '-123'
+  parsed = myjson.parse(string)
+  assert(parsed == -123)
+  string = '-123.05'
+  parsed = myjson.parse(string)
+  assert(parsed == -123.05)
+
+  string = '-123.05e10'
+  parsed = myjson.parse(string)
+  assert(parsed == -123.05e10)
+
+  string = '[]'
+  parsed = myjson.parse(string)
+  assert(parsed == [])
+
+  string = '[1, 2, 3, "e"]'
+  parsed = myjson.parse(string)
+  assert(parsed == [1, 2, 3, 'e'])
+
+  string = '[1, 2, 3, "e"]'
+  parsed = myjson.parse(string)
+  assert(parsed == [1, 2, 3, 'e'])
