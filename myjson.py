@@ -10,9 +10,6 @@ class MyJson():
     self.index = 0
 
     self.word = next(self.strings)
-    json_value = None
-
-    visited = False
     json_value = self.value()
 
     return json_value
@@ -70,11 +67,17 @@ class MyJson():
     if self.word != '"':
       raise MyJsonParseError(f'String parser error: {self.word}')
 
-    self.word = next(self.strings)
+    try:
+      self.word = next(self.strings)
+    except StopIteration as e:
+      raise MyJsonParseError(f'String parser error: EOF')
 
     while self.word != '"':
       if self.word == '\\':
-        self.word = next(self.strings)
+        try:
+          self.word = next(self.strings)
+        except StopIteration as e:
+          raise MyJsonParseError(f'String parser error: backslash EOF')
         self.index += 1
 
         if self.word == '"':
@@ -97,17 +100,30 @@ class MyJson():
           codepoint = ""
           valids = [chr(48 + i) for i in range(10)] + [chr(97 + i) for i in range(6)] + [chr(65 + i) for i in range(6)]
           for index in range(4):
-            digits = next(self.strings)
+            try:
+              digits = next(self.strings)
+            except StopIteration as e:
+              raise MyJsonParseError(f'String parse error: Illegal Unicode code point: EOF')
             if digits in valids:
               codepoint += digits
+            else:
+              raise MyJsonParseError(f'String parser error: Illegal Unicode code point: {digits}')
           self.word = chr(int(codepoint, 16))
 
         ret += self.word
-        self.word = next(self.strings)
+        try:
+          self.word = next(self.strings)
+        except StopIteration as e:
+          raise MyJsonParseError(f'String parser error: EOF')
+
         self.index += 1
       else:
         ret += self.word
-        self.word = next(self.strings)
+        try:
+          self.word = next(self.strings)
+        except StopIteration as e:
+          raise MyJsonParseError(f'String parser error: EOF')
+
         self.index += 1
 
     try:
@@ -121,7 +137,10 @@ class MyJson():
     if self.word != ':':
       raise MyJsonParseError(f'Colon parser error: {self.word}')
 
-    self.word = next(self.strings)
+    try:
+      self.word = next(self.strings)
+    except StopIteration as e:
+      raise MyJsonParseError(f'Colon parser error: EOF')
 
   def value_false(self):
     token = ""
@@ -457,3 +476,54 @@ if __name__ == '__main__':
   string = '[1, 2, 3, "e"]'
   parsed = myjson.parse(string)
   assert(parsed == [1, 2, 3, 'e'])
+
+  string = '"'
+  try:
+    parsed = myjson.parse(string)
+  except MyJsonParseError as e:
+    assert(str(e) == 'String parser error: EOF')
+
+  string = '"\\'
+  try:
+    parsed = myjson.parse(string)
+  except MyJsonParseError as e:
+    assert(str(e) == 'String parser error: backslash EOF')
+
+  string = '"\\u90"'
+  try:
+    parsed = myjson.parse(string)
+    print(parsed)
+  except MyJsonParseError as e:
+    assert(str(e) == 'String parser error: Illegal Unicode code point: "')
+
+  string = '"\\u90x"'
+  try:
+    parsed = myjson.parse(string)
+  except MyJsonParseError as e:
+    assert(str(e) == 'String parser error: Illegal Unicode code point: x')
+
+  string = '"\\u9000'
+  try:
+    parsed = myjson.parse(string)
+  except MyJsonParseError as e:
+    assert(str(e) == 'String parser error: EOF')
+
+  string = '"\\n'
+  try:
+    parsed = myjson.parse(string)
+  except MyJsonParseError as e:
+    assert(str(e) == 'String parser error: EOF')
+
+  string = '"abc'
+  try:
+    parsed = myjson.parse(string)
+  except MyJsonParseError as e:
+    assert(str(e) == 'String parser error: EOF')
+
+  string = '{"abc":'
+  try:
+    parsed = myjson.parse(string)
+  except MyJsonParseError as e:
+    assert(str(e) == 'Colon parser error: EOF')
+
+
