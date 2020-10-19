@@ -12,6 +12,10 @@ class MyJson():
     self.word = next(self.strings)
     json_value = self.value()
 
+    error = [s for s in self.strings]
+    if len(error) >= 1:
+      raise MyJsonParseError(f'Parse error: Remaining: {self.word}{"".join(error)}')
+
     return json_value
 
   def value_object(self):
@@ -555,4 +559,37 @@ if __name__ == '__main__':
   parsed = myjson.parse(string)
 
   assert(parsed == '{"abc": "def", "array": []}')
+
+  string = '"abc" "def"'
+  try:
+    parsed = myjson.parse(string)
+    print(parsed)
+  except MyJsonParseError as e:
+    assert(str(e) == 'Parse error: Remaining: "def"')
+  else:
+    assert(False)
+
+  string = 'true, false'
+  try:
+    parsed = myjson.parse(string)
+  except MyJsonParseError as e:
+    assert(str(e) == 'Parse error: Remaining: , false')
+  else:
+    assert(False)
+
+  string = '{"abc": "def"} {"abc": true, "def": false}'
+  try:
+    parsed = myjson.parse(string)
+  except MyJsonParseError as e:
+    assert(str(e) == 'Parse error: Remaining: {"abc": true, "def": false}')
+  else:
+    assert(False)
+
+  string = '{"abc": "def" "ghi"}'
+  try:
+    parsed = myjson.parse(string)
+  except MyJsonParseError as e:
+    assert(str(e) == 'Parse error: Remaining: ghi"}')
+  else:
+    assert(False)
 
