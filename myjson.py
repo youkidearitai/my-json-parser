@@ -484,55 +484,75 @@ if __name__ == '__main__':
     parsed = myjson.parse(string)
   except MyJsonParseError as e:
     assert(str(e) == 'String parser error: EOF')
+  else:
+    assert(False)
 
   string = '"\\'
   try:
     parsed = myjson.parse(string)
   except MyJsonParseError as e:
     assert(str(e) == 'String parser error: backslash EOF')
+  else:
+    assert(False)
 
   string = '"\\u90"'
   try:
     parsed = myjson.parse(string)
-    print(parsed)
   except MyJsonParseError as e:
     assert(str(e) == 'String parser error: Illegal Unicode code point: "')
+  else:
+    assert(False)
 
   string = '"\\u90x"'
   try:
     parsed = myjson.parse(string)
   except MyJsonParseError as e:
     assert(str(e) == 'String parser error: Illegal Unicode code point: x')
+  else:
+    assert(False)
 
   string = '"\\u9000'
   try:
     parsed = myjson.parse(string)
   except MyJsonParseError as e:
     assert(str(e) == 'String parser error: EOF')
+  else:
+    assert(False)
 
   string = '"\\n'
   try:
     parsed = myjson.parse(string)
   except MyJsonParseError as e:
     assert(str(e) == 'String parser error: EOF')
+  else:
+    assert(False)
 
   string = '"abc'
   try:
     parsed = myjson.parse(string)
   except MyJsonParseError as e:
     assert(str(e) == 'String parser error: EOF')
+  else:
+    assert(False)
 
   string = '{"abc":'
   try:
     parsed = myjson.parse(string)
   except MyJsonParseError as e:
     assert(str(e) == 'Colon parser error: EOF')
+  else:
+    assert(False)
 
   try:
     string = '"\\x"'
     parsed = myjson.parse(string)
   except MyJsonParseError as e:
     assert(str(e) == "String parser error: Illegal special character: \\x")
+  else:
+    assert(False)
 
+  string = '"{\\"abc\\": \\"def\\", \\"array\\": []}"'
+  parsed = myjson.parse(string)
 
+  assert(parsed == '{"abc": "def", "array": []}')
 
