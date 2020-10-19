@@ -109,6 +109,8 @@ class MyJson():
             else:
               raise MyJsonParseError(f'String parser error: Illegal Unicode code point: {digits}')
           self.word = chr(int(codepoint, 16))
+        else:
+          raise MyJsonParseError(f'String parser error: Illegal special character: \\{self.word}')
 
         ret += self.word
         try:
@@ -525,5 +527,12 @@ if __name__ == '__main__':
     parsed = myjson.parse(string)
   except MyJsonParseError as e:
     assert(str(e) == 'Colon parser error: EOF')
+
+  try:
+    string = '"\\x"'
+    parsed = myjson.parse(string)
+  except MyJsonParseError as e:
+    assert(str(e) == "String parser error: Illegal special character: \\x")
+
 
 
