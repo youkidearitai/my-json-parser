@@ -14,7 +14,7 @@ class MyJson():
 
     error = [s for s in self.strings]
     if len(error) >= 1:
-      raise MyJsonParseError(f'Parse error: Remaining: {self.word}{"".join(error)}')
+      raise MyJsonParseError(f'Parse error: Remaining: {self.word}{"".join(error[:30])}')
 
     return json_value
 
